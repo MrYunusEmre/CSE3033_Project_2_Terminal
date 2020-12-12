@@ -4,11 +4,14 @@
 #include <errno.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
 
 pid_t child_pid = 1 ; // Global 
-
+int nextParamIndex = 0;
  
 /* The setup function below will not return any value, but it will just: read
 in the next command line; separate it into distinct arguments (using blanks as
@@ -48,7 +51,7 @@ void setup(char inputBuffer[], char *args[],int *background)
 		exit(-1);           /* terminate with error code of -1 */
 		}
 
-	printf(">>%s<<\n",inputBuffer);
+	
     for (i=0;i<length;i++){ /* examine every character in the inputBuffer */
 
         switch (inputBuffer[i]){
@@ -85,9 +88,8 @@ void setup(char inputBuffer[], char *args[],int *background)
 		}    /* end of for */
 		
 	args[ct] = NULL; /* just in case the input line was > 80 */
+	nextParamIndex = ct;
 
-	for (i = 0; i <= ct; i++)
-		printf("args %d = %s\n",i,args[i]);
 } /* end of setup routine */
 
 void kill_process(int pid){
@@ -108,6 +110,7 @@ void kill_process(int pid){
 
 
 }
+
 
 
 int main(void)
@@ -150,6 +153,13 @@ int main(void)
 		}
 		else if(child_pid == 0){ /* If it is child*/
 			printf("I am child : %d\n",getpid());
+		//	execvp(args[0],&args[0]); -> this should be execv
+		//	execv("/bin/ls", &args[0]);
+		/*	int i = 0;
+			for (i = 0; i <= nextParamIndex; i++)
+				printf("args %d = %s\n",i,args[i]);*/
+				
+			
 			kill_process(getpid());
 		}
 		
