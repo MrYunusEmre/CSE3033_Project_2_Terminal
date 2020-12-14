@@ -21,6 +21,8 @@ will become null-terminated, C-style strings. */
 int numOfArgs = 0; //
 int processNumber = 1 ; //
 
+pid_t parentPid ; // stores the parent pid
+
 void setup(char inputBuffer[], char *args[],int *background)
 {
     int length, /* # of characters in the command line */
@@ -89,26 +91,8 @@ void setup(char inputBuffer[], char *args[],int *background)
 		printf("args %d = %s\n",i,args[i]);
 } /* end of setup routine */
  
- 
-pid_t parentPid ;
 
-
-/*
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * */
-
-
-
-
+// next 2 functions is looking PATH and find executable input  
 
 /* int checkifexecutable(const char *filename)
  * 
@@ -182,25 +166,6 @@ int findpathof(char *pth, const char *exe)
 }
 
 
-
-
-
-/*
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * */
-
-
 struct listProcess{
 	
 	int processNumber ;
@@ -259,15 +224,15 @@ void printList(ListProcessPtr currentPtr){
 	if(isEmpty(currentPtr)) puts("List is empty\n");
 	else{
 		
-		puts("Running : ");
-		while(tempPtr != NULL){
-			if(waitpid(tempPtr->pid,&status,WNOHANG)==0)
+		puts("Running : "); 			// prints the running processes
+		while(tempPtr != NULL){				// looks all processes in linkedlist and controls if they are running or has stopped
+			if(waitpid(tempPtr->pid,&status,WNOHANG)==0)		//if process is working , this waitpid will return 0
 				printf("\t[%d] %s (Pid=%ld)\n",tempPtr->processNumber,tempPtr->progName,(long)(tempPtr->pid));
 			tempPtr = tempPtr->nextPtr;
 		}
-		puts("Stopped : ");
-		while(currentPtr != NULL){
-			if(waitpid(currentPtr->pid,&status,WNOHANG)==-1)
+		puts("Finished : ");			// prints the finished processes
+		while(currentPtr != NULL){			// looks all processes in linkedlist and controls if they are running or has stopped
+			if(waitpid(currentPtr->pid,&status,WNOHANG)==-1)		//if process has stopped , this waitpid will return -1
 				printf("\t[%d] %s (Pid=%ld)\n",currentPtr->processNumber,currentPtr->progName,(long)(currentPtr->pid));
 			currentPtr = currentPtr->nextPtr;
 		}
@@ -278,7 +243,45 @@ void printList(ListProcessPtr currentPtr){
 	
 }
 
-
+void deleteStoppedList(ListProcessPtr *currentPtr){
+	
+	int status ;
+	
+	if((*currentPtr)==NULL)
+		return ;
+		
+	if(waitpid((*currentPtr)->pid,&status,WNOHANG)==-1 && (*currentPtr)->processNumber==1){
+		// if the stopped process is the first 
+		
+		if((*currentPtr)->nextPtr==NULL){
+			(*currentPtr)=NULL;
+			return ;
+		}
+		
+		ListProcessPtr tempPtr = *currentPtr ;
+		*currentPtr = (*currentPtr)->nextPtr ;
+		free(tempPtr) ;
+		deleteStoppedList(currentPtr);
+	}
+	else{
+		// if the stopped process is not the first
+		 
+		ListProcessPtr previousPtr = *currentPtr ;
+		ListProcessPtr tempPtr = (*currentPtr)->nextPtr ;
+		
+		while(tempPtr!=NULL && waitpid(tempPtr->pid,&status,WNOHANG)!=-1){
+			tempPtr=tempPtr->nextPtr;
+		}
+		if(tempPtr!=NULL){
+			ListProcessPtr delPtr = tempPtr ;
+			previousPtr->nextPtr=tempPtr->nextPtr;
+			free(delPtr);
+			deleteStoppedList(currentPtr);
+		}
+			
+	}
+	
+}
 
 
 
@@ -390,8 +393,10 @@ int main(void)
 				fflush(0);
 				/*setup() calls exit() when Control-D is entered */
 				setup(inputBuffer, args, &background);
-				if(strcmp(args[0],"ps_all")==0) 
-					printList(startPtr); //You need to press ps_all to see the content of list 
+				if(strcmp(args[0],"ps_all")==0){
+					printList(startPtr); //You need to press ps_all to see the content of list
+					deleteStoppedList(&startPtr);
+				}
 				else
 					partA(inputBuffer, args, &background,&startPtr);
 	}   
