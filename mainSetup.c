@@ -19,6 +19,7 @@ delimiters), and set the args array entries to point to the beginning of what
 will become null-terminated, C-style strings. */
 
 int numOfArgs = 0; //
+int processNumber = 1 ; //
 
 void setup(char inputBuffer[], char *args[],int *background)
 {
@@ -202,6 +203,7 @@ int findpathof(char *pth, const char *exe)
 
 struct listProcess{
 	
+	int processNumber ;
 	pid_t pid ;	     // pid
 	char progName[50] ; // program name
 	struct listProcess *nextPtr ;
@@ -218,6 +220,7 @@ void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
 	
 	if(newPtr != NULL){
 		strcpy(newPtr->progName, progName);
+		newPtr->processNumber = processNumber ;
 		newPtr->pid = pid;
 		newPtr->nextPtr = NULL;
 		
@@ -250,24 +253,30 @@ void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
 int isEmpty(ListProcessPtr sPtr){return sPtr == NULL;}
 
 void printList(ListProcessPtr currentPtr){
-	
+		
+	int status ; 
+	ListProcessPtr tempPtr = currentPtr;
 	if(isEmpty(currentPtr)) puts("List is empty\n");
 	else{
 		
-		puts("The list is : ");
+		puts("Running : ");
+		while(tempPtr != NULL){
+			if(waitpid(tempPtr->pid,&status,WNOHANG)==0)
+				printf("\t[%d] %s (Pid=%ld)\n",tempPtr->processNumber,tempPtr->progName,(long)(tempPtr->pid));
+			tempPtr = tempPtr->nextPtr;
+		}
+		puts("Stopped : ");
 		while(currentPtr != NULL){
-			
-			
-			printf("pid : %ld , progName : %s\n",(long)(currentPtr->pid),currentPtr->progName);
+			if(waitpid(currentPtr->pid,&status,WNOHANG)==-1)
+				printf("\t[%d] %s (Pid=%ld)\n",currentPtr->processNumber,currentPtr->progName,(long)(currentPtr->pid));
 			currentPtr = currentPtr->nextPtr;
-			}
+		}
 		
-		puts("NULL\n");
+		puts("\n");
 		
 		}
 	
 }
-
 
 
 
@@ -351,15 +360,11 @@ void partA(char inputBuffer[], char *args[],int *background,ListProcessPtr *sPtr
 		else{
 			
 			insert(&(*sPtr),childPid,args[0]);
+			processNumber++;
 			
-			}
-			
-			
-		if(*args[0] == 'j') printList(*sPtr); //You need to press j 
-											  //to see the content of list
+			}		
 			
 	}
-	
 	
 }
 
@@ -380,11 +385,15 @@ int main(void)
 	while (parentPid==getpid()){
 				background = 0;
 				//printf("maindeki id : %d\n",getpid());
+				if(isEmpty(startPtr))		processNumber=1;
 				printf("myshell: ");
 				fflush(0);
 				/*setup() calls exit() when Control-D is entered */
 				setup(inputBuffer, args, &background);
-				partA(inputBuffer, args, &background,&startPtr);
+				if(strcmp(args[0],"ps_all")==0) 
+					printList(startPtr); //You need to press ps_all to see the content of list 
+				else
+					partA(inputBuffer, args, &background,&startPtr);
 	}   
         
 
