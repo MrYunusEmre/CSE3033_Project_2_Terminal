@@ -317,7 +317,7 @@ void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
 		
 	else{ //Parent part
 				
-		if(*background==0)
+		if(*background==0) // -> foreground
 			wait(NULL);
 			
 		else{
@@ -351,27 +351,27 @@ int main(void)
 	ListProcessPtr startPtr = NULL; //starting pointer
 
 	while (parentPid==getpid()){
-				background = 0;
-				if(isEmpty(startPtr))		processNumber=1;
-				printf("myshell: ");
-				fflush(0);
+		background = 0;
+		if(isEmpty(startPtr))		processNumber=1;
+		printf("myshell: ");
+		fflush(0);
 
-				/*setup() calls exit() when Control-D is entered */
-				setup(inputBuffer, args, &background);
-				progpath = strdup(args[0]);
-				exe=args[0];
+		/*setup() calls exit() when Control-D is entered */
+		setup(inputBuffer, args, &background);
+		progpath = strdup(args[0]);
+		exe=args[0];
 
-				if(strcmp(args[0],"ps_all")==0){
-					printList(startPtr); //You need to press ps_all to see the content of list
-					deleteStoppedList(&startPtr);
-				}else if(!findpathof(path, exe)){ /*Checks the existence of program*/
-					printf("No executable \"%s\" found\n", exe);
-					free(progpath);
-				}else{			/*If there is a program, then run it*/
-					if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
-						args[numOfArgs-1] = '\0';
-					partA(path, args, &background,&startPtr);
-				}
+		if(strcmp(args[0],"ps_all")==0){
+			printList(startPtr); //You need to press ps_all to see the content of list
+			deleteStoppedList(&startPtr);
+		}else if(!findpathof(path, exe)){ /*Checks the existence of program*/
+			printf("No executable \"%s\" found\n", exe);
+			free(progpath);
+		}else{			/*If there is a program, then run it*/
+			if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
+				args[numOfArgs-1] = '\0';
+			partA(path, args, &background,&startPtr);
+		}
 
 
 					
