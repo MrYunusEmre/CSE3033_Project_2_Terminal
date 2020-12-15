@@ -87,8 +87,7 @@ void setup(char inputBuffer[], char *args[],int *background)
      }    /* end of for */
      args[ct] = NULL; /* just in case the input line was > 80 */
 	numOfArgs = ct;
-	for (i = 0; i <= ct; i++)
-		printf("args %d = %s\n",i,args[i]);
+
 } /* end of setup routine */
  
 
@@ -294,75 +293,38 @@ void childSignalHandler(int signum) {
 
 pid_t childPid ;
 
-void partA(char inputBuffer[], char *args[],int *background,ListProcessPtr *sPtr){
+void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
 	
 	
 	childPid = fork();
-	
-	
-	 char path[PATH_MAX+1];
-	 char *progpath = strdup(args[0]);
-	 char *prog = basename(progpath);
-	 char *exe;
-	 
-	//if(strcmp('ps_all',args[0]) == 0) printList(*sPtr);
-	
+		
 	
 	if(childPid < 0) printf("Error");
 	else if(childPid == 0 && *background == 0){//create foreground process
-		
-				
-		//printf("%ld : I am child foreground\n",(long)getpid());	
-		
-		exe=args[0];
-		
-		if (!findpathof(path,exe)) {
-			printf("No executable \"%s\" found\n", exe);
-		 }
-		 
-		 //puts(path);
-		 free(progpath);
-		 
-
-				
+						
 		execv(path,args);
-		
-		
-		
+				
 			
 	}
 	else if(childPid == 0 && *background == 1){//create background process
-		
-		//printf("%ld : I am child background \n",(long)getpid());	
-		
-		exe=args[0];
-		if (!findpathof(path, exe)) {
-			printf("No executable \"%s\" found\n", exe);
-		 }
-		 //puts(path);
-		free(progpath);
+				
 
-		
-		if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
-			args[numOfArgs-1] = '\0';
-			
-		
-		
+						
 		execv(path,args);
 		
 		}
 		
 		
 	else{ //Parent part
-		
-		//printf("%ld : I am parent\n",(long)getpid());
-		
+				
 		if(*background==0)
 			wait(NULL);
 			
 		else{
 			
+			
 			insert(&(*sPtr),childPid,args[0]);
+			
 			processNumber++;
 			
 			}		
@@ -378,28 +340,42 @@ int main(void)
 	char inputBuffer[MAX_LINE]; /*buffer to hold command entered */
 	int background; /* equals 1 if a command is followed by '&' */
 	char *args[MAX_LINE/2 + 1]; /*command line arguments */
+	char path[PATH_MAX+1];
+	char *progpath;
+	char *exe;
 	
+
 	signal(SIGCHLD, childSignalHandler);
 	parentPid = getpid();
 	
 	ListProcessPtr startPtr = NULL; //starting pointer
 
-	//printf("%ld : I am parentpid\n%ld : I am getpid\n",(long)parentPid,(long)getpid());
 	while (parentPid==getpid()){
 				background = 0;
-				//printf("maindeki id : %d\n",getpid());
 				if(isEmpty(startPtr))		processNumber=1;
 				printf("myshell: ");
 				fflush(0);
+
 				/*setup() calls exit() when Control-D is entered */
 				setup(inputBuffer, args, &background);
+				progpath = strdup(args[0]);
+				exe=args[0];
+
 				if(strcmp(args[0],"ps_all")==0){
 					printList(startPtr); //You need to press ps_all to see the content of list
 					deleteStoppedList(&startPtr);
+				}else if(!findpathof(path, exe)){ /*Checks the existence of program*/
+					printf("No executable \"%s\" found\n", exe);
+					free(progpath);
+				}else{			/*If there is a program, then run it*/
+					if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
+						args[numOfArgs-1] = '\0';
+					partA(path, args, &background,&startPtr);
 				}
-				else
-					partA(inputBuffer, args, &background,&startPtr);
-	}   
+
+
+					
+	 }	  
         
 
 				/** the steps are:
