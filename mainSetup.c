@@ -178,6 +178,12 @@ typedef struct listProcess ListProcess ; //synonym for struct listProcess
 typedef ListProcess *ListProcessPtr; //synonym for ListProcess*
 
 
+pid_t fgProcessPid = 0;
+
+
+
+
+
 void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
 	
 	ListProcessPtr newPtr = malloc(sizeof(ListProcess)); // Create Node
@@ -249,14 +255,9 @@ void deleteStoppedList(ListProcessPtr *currentPtr){
 	if((*currentPtr)==NULL)
 		return ;
 		
-	if(waitpid((*currentPtr)->pid,&status,WNOHANG)==-1 && (*currentPtr)->processNumber==1){
+	if(waitpid((*currentPtr)->pid,&status,WNOHANG)==-1){
 		// if the stopped process is the first 
-		
-		if((*currentPtr)->nextPtr==NULL){
-			(*currentPtr)=NULL;
-			return ;
-		}
-		
+	
 		ListProcessPtr tempPtr = *currentPtr ;
 		*currentPtr = (*currentPtr)->nextPtr ;
 		free(tempPtr) ;
@@ -269,6 +270,7 @@ void deleteStoppedList(ListProcessPtr *currentPtr){
 		ListProcessPtr tempPtr = (*currentPtr)->nextPtr ;
 		
 		while(tempPtr!=NULL && waitpid(tempPtr->pid,&status,WNOHANG)!=-1){
+			previousPtr = tempPtr;
 			tempPtr=tempPtr->nextPtr;
 		}
 		if(tempPtr!=NULL){
@@ -288,33 +290,44 @@ void childSignalHandler(int signum) {
 	int status;
 	pid_t pid;
 	
+
 	pid = waitpid(-1, &status, WNOHANG);
 }
 
-pid_t childPid ;
+
+void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatically
+	
+	if(fgProcessPid == 0 || waitpid(fgProcessPid,NULL,WNOHANG) == -1){
+		system("clear");
+		printf("myshell: ");
+		fflush(stdout);
+		return;
+	}
+
+	kill(fgProcessPid,SIGKILL);
+	fgProcessPid = 0;
+}
+
+
+//We can cancel that method 
+/*
 
 void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
 	
+	pid_t childPid ;
 	
 	childPid = fork();
-		
+	setpgid(childPid, childPid); // this will put the child in different process group
+								// this will allow us to kill specific child
 	
 	if(childPid < 0) printf("Error");
-	else if(childPid == 0 && *background == 0){//create foreground process
-						
+	else if(childPid == 0){//create foreground process
+		fgProcessPid = getpid();
+		printf("pid : %ld\n",(long)fgProcessPid);		
 		execv(path,args);
 				
 			
-	}
-	else if(childPid == 0 && *background == 1){//create background process
-				
-
-						
-		execv(path,args);
-		
-		}
-		
-		
+	}		
 	else{ //Parent part
 				
 		if(*background==0) // -> foreground
@@ -323,6 +336,7 @@ void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
 		else{
 			
 			
+
 			insert(&(*sPtr),childPid,args[0]);
 			
 			processNumber++;
@@ -331,6 +345,54 @@ void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
 			
 	}
 	
+}
+*/
+
+
+void parentPart(char *args[], int *background , pid_t childPid , ListProcessPtr *sPtr){
+
+	if(*background == 1){ //Background Process
+
+		waitpid(childPid, NULL, WNOHANG);
+		setpgid(childPid, childPid); // This will put that process into its process group
+		insert(&(*sPtr),childPid,args[0]);
+		processNumber++;
+
+	}else{ // Foreground Process
+
+		setpgid(childPid, childPid); // This will put that process into its process group
+		fgProcessPid = childPid;
+
+		 if(childPid != waitpid(childPid, NULL, WUNTRACED))
+            perror("Parent failed while waiting the child due to a signal or error!!!");
+
+	}
+}
+
+void childPart(char path[], char *args[]){
+
+	execv(path,args);
+
+
+}
+
+void createProcess(char path[], char *args[],int *background,ListProcessPtr *sPtr){
+
+	pid_t childPid ;
+
+	childPid = fork();
+
+
+	if(childPid == -1){perror("fork() function is failed!\n"); return;}
+	else if(childPid != 0){ // Parent Part
+		parentPart(args , &(*background),childPid , &(*sPtr));
+
+	}else{	//Child Part
+		childPart(path , args);
+
+	}
+
+
 }
 
  
@@ -345,7 +407,9 @@ int main(void)
 	char *exe;
 	
 
-	signal(SIGCHLD, childSignalHandler);
+	signal(SIGCHLD, childSignalHandler); // childSignalHandler will be invoked when the fork() method is invoked
+	signal(SIGTSTP, sigtstpHandler); //This is for handling ^Z
+
 	parentPid = getpid();
 	
 	ListProcessPtr startPtr = NULL; //starting pointer
@@ -370,7 +434,8 @@ int main(void)
 		}else{			/*If there is a program, then run it*/
 			if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
 				args[numOfArgs-1] = '\0';
-			partA(path, args, &background,&startPtr);
+			//partA(path, args, &background,&startPtr);
+			createProcess(path,args,&background,&startPtr);
 		}
 
 
