@@ -5,6 +5,8 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#include <dirent.h> 
+
 
 #include <limits.h>
 #include <libgen.h>
@@ -13,6 +15,23 @@
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
  
+
+
+
+/*
+	
+	SATIR 241 -> BOOKMARK INSERT 
+	SATIR 421 -> BOOKMARK CALISTIRMA YERI KESIN BAKMAN GEREKIYOR YAPAMADIM
+
+	550 den 750 ye kadar ben yazdım bi de 241 in oralarda bookmarka struct oluşturdum insert delete isempty run fonksyionlarını olusturdum 
+
+*/
+
+
+
+
+
+
 /* The setup function below will not return any value, but it will just: read
 in the next command line; separate it into distinct arguments (using blanks as
 delimiters), and set the args array entries to point to the beginning of what
@@ -174,15 +193,19 @@ struct listProcess{
 	
 };
 
+struct bookmark{
+
+	char progName[50] ; // program name whih added into bookmark
+	struct bookmark *nextPtr ;
+
+};
+
 typedef struct listProcess ListProcess ; //synonym for struct listProcess
 typedef ListProcess *ListProcessPtr; //synonym for ListProcess*
-
+typedef struct bookmark bookmarks ; //synonym for struct bookmark
+typedef bookmarks *bookmarkPtr ; //synonym for struct bookmarks
 
 pid_t fgProcessPid = 0;
-
-
-
-
 
 void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
 	
@@ -214,13 +237,46 @@ void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
 	else{
 		printf("No memory available\n");
 	}
-	
-	
-	
 		
 }
 
+// inserting program into bookmark struct
+void insertBookmark(bookmarkPtr *bPtr , char progName[]){
+
+	bookmarkPtr newPtr = malloc(sizeof(bookmarks));
+
+	if(newPtr != NULL){
+		strcpy(newPtr->progName, progName);
+		newPtr->nextPtr = NULL;
+
+		bookmarkPtr previousPtr = NULL ;
+		bookmarkPtr currentPtr = *bPtr ;
+
+		while(currentPtr != NULL){
+			previousPtr = currentPtr ;
+			currentPtr = currentPtr->nextPtr ;
+		}
+
+		if(previousPtr == NULL){ //insert to the beginning
+			newPtr->nextPtr = *bPtr;
+			*bPtr = newPtr;
+		}else{
+			previousPtr->nextPtr = newPtr;
+			newPtr->nextPtr = currentPtr;
+			
+		}		
+
+	}
+	else{
+		printf("No memory available\n");
+	}
+
+}
+
 int isEmpty(ListProcessPtr sPtr){return sPtr == NULL;}
+
+// isempty for bookmark struct
+int isEmptyBookmark(bookmarkPtr bPtr){return bPtr == NULL;}
 
 void printList(ListProcessPtr currentPtr){
 		
@@ -246,6 +302,22 @@ void printList(ListProcessPtr currentPtr){
 		
 		}
 	
+}
+
+void printListBookmark(bookmarkPtr bPtr){
+
+	int i=0 ;
+	bookmarkPtr tempPtr = bPtr ;
+	if (isEmptyBookmark(bPtr)) puts("List is empty\n");
+	else{
+		while(tempPtr->nextPtr != NULL){
+			printf("%d %s\n",i,tempPtr->progName);
+			i++;
+			tempPtr = tempPtr->nextPtr ;
+		}
+		printf("%d %s\n",i,tempPtr->progName);
+	}
+
 }
 
 void deleteStoppedList(ListProcessPtr *currentPtr){
@@ -284,7 +356,85 @@ void deleteStoppedList(ListProcessPtr *currentPtr){
 	
 }
 
+void deleteBookmarkList(char *charindex,bookmarkPtr *currentPtr){
 
+	int index = atoi(charindex);
+
+	if(isEmptyBookmark(*currentPtr))
+		printf("List is empty\n");
+	else{
+
+		// delete first item
+		if(index==0){
+			bookmarkPtr tempPtr = *currentPtr;
+			*currentPtr=(*currentPtr)->nextPtr;
+			free(tempPtr);
+		}
+		else{	// delete others
+			bookmarkPtr previousPtr = *currentPtr ;
+			bookmarkPtr tempPtr = (*currentPtr)->nextPtr ;
+			int temp = 1;
+
+			while(temp!=index && tempPtr!=NULL){
+				previousPtr = tempPtr ;
+				tempPtr = tempPtr->nextPtr ;
+				temp++;
+			}
+			if(tempPtr==NULL)
+				printf("There is no bookmark with this index.\n");
+			else{
+
+				bookmarkPtr delPtr = tempPtr ;
+				previousPtr->nextPtr=tempPtr->nextPtr;
+				free(delPtr);
+
+			}
+
+		}
+
+	}
+
+}
+
+void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
+
+	int index = atoi(charindex);
+	char *progpath ;
+
+	if(isEmptyBookmark(currentPtr))
+		printf("List is empty\n");
+	else{
+
+		bookmarkPtr tempPtr = currentPtr;
+		int j=0 ;
+		while(tempPtr!=NULL && j!=index){
+			tempPtr=tempPtr->nextPtr;
+			j++;
+		}
+		if (tempPtr==NULL)
+		{
+			printf("There is no bookmark in this index.\n");
+		}
+		else{
+
+			// KANK BURADA EXECV İLE EXE CALISACAK DA EXE MESELESINI HALLEDEMEDİM SUANKİ EXE DEDİGİM SEY "" TIRNAKLARI CIKARIYOR INPUTTAN
+			// SANA MESELA -> "ls -la" girilmişse -> ls -la
+			// veriyor takil gerisnde
+
+			char exe[MAX_LINE] ;
+			char *progpath ;
+			memcpy( exe, &tempPtr->progName[2],strlen(tempPtr->progName)-4);
+
+			printf("%s\n",exe);
+
+			
+
+
+		}
+
+	}
+
+}
 
 void childSignalHandler(int signum) {
 	int status;
@@ -367,6 +517,7 @@ void parentPart(char *args[], int *background , pid_t childPid , ListProcessPtr 
             perror("Parent failed while waiting the child due to a signal or error!!!");
 
 	}
+
 }
 
 void childPart(char path[], char *args[]){
@@ -395,9 +546,236 @@ void createProcess(char path[], char *args[],int *background,ListProcessPtr *sPt
 
 }
 
- 
-int main(void)
+//   ---- ayrica bookmark kontrolde de "ls -la" gibi inputlar icin " ile basladigini veya " ile bittigini kontrol etmek icin kullanıyorum
+int startsWith(const char *pre, const char *str)
 {
+    size_t lenpre = strlen(pre),
+           lenstr = strlen(str);
+    return lenstr < lenpre ? 0 : memcmp(pre, str, lenpre) == 0;
+
+}
+
+
+/*
+*	Return if parameter pre ends with suffix or not
+*   fonksiyona current directorydeki tüm dosyalar pre olarak geliyor , fonksiyon bu file .c .... ile mi bitiyor diye kontrol ediyor
+*   ---- ayrica bookmark kontrolde de "ls -la" gibi inputlar icin " ile basladigini veya " ile bittigini kontrol etmek icin kullanıyorum
+*/
+int endsWith(const char *pre, const char *suffix){
+    if (!pre || !suffix)
+        return 0;
+    size_t lenstr = strlen(pre);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(pre + lenstr - lensuffix, suffix, lensuffix) == 0;
+
+}
+
+void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
+
+	int i=0; 
+	while(args[i] != NULL){
+		i++;
+	}
+
+	if(i==1){
+		printf("duzelt -> void bookmarkCommand() kullanım seklini yaz hata olarak ");
+	}
+	else if((strcmp(args[1],"-l")==0) && i==2){
+
+		printListBookmark(*startPtrBookmark);
+
+	}
+	else if((strcmp(args[1],"-i")==0) && i==3){
+
+		// args[2] listeden calistirilacak index olacak bu kadar
+		// delete gibi bu da int kontrolu yapılacak args[2] icin kendi calıstırma fonksioynunda yap sonra sil bu yourmları
+		runBookmarkIndex(args[2],*startPtrBookmark);
+
+	}
+	else if((strcmp(args[1],"-d")==0) && i==3){
+
+		// args[2] listeden silinecek index olacak bu kadar , args[2] integer bi deger olacak kontrol etcez 
+		// delete icinde kontrol edebilirz 
+		deleteBookmarkList(args[2],startPtrBookmark);
+
+	}
+	else if(startsWith("\"",args[1])){
+
+		// bookmark "ls -la" blabla
+		// eger " " tırnaklardan sonra bir sey girilmis mi diye kontrol ediyor eger girilmisse hatali input diyoruz degisle insert edioruz
+
+		// EGER BOOKMARKIN ICINE GECERLI OLMAYAN BIR ISLEM KOYMAYALIM SALLAYAMASIN ISLEMLERI DIYORSAN
+		// KONTROLU BURADA YAPALIM HA YOK DIYOSAN SAL
+		// EGER " İLE BASLAYIP " İLE BİTMİYORSA SEGMENTATION FAULT ALIYORUM DUZELTEMEDIM
+
+
+		int j=1 ;
+		while(!endsWith(args[j],"\"")){
+			j++;
+		}
+		if(j != i-1)
+			printf("duzelt -> void bookmarkCommand() kullanım seklini yaz hata olarak ");
+		else{
+			char exe[MAX_LINE] ;
+			int k=1 ;
+			while(k<=j){
+				strcat(exe,args[k]);
+				strcat(exe," ");
+				k++;
+			}
+			insertBookmark(startPtrBookmark,exe);
+		}
+
+	}
+
+}
+
+
+
+
+// searchdan 2 parametre ile çocuk oluşturup childPartı çağırmam lazımdı o yüzden böyle yaptım kanka 
+void createProcess2(char path[], char *args[]){
+
+	pid_t childPid ;
+
+	childPid = fork();
+
+
+	if(childPid == -1){perror("fork() function is failed!\n"); return;}
+	else if(childPid != 0){ // Parent Part
+		wait(NULL);
+	}else{	//Child Part
+		childPart(path , args);
+
+	}
+
+}
+
+
+void findPattern(char *pattern , char *fileName){
+
+	char *argv[] = { "/usr/bin/grep", "-n", pattern , fileName , NULL };
+    createProcess2(argv[0],argv);
+
+}
+
+
+/**
+ * Lists all files and sub-directories recursively 
+ * considering path as base path.
+ * Fonksiyon current directorydeki tüm directorylere recursive olarak giriyor ve tüm dosyaları basıyor , bunu değişicez return yapıcaz
+ * sonra endswithe yollayıp sadece istediğimiz dosyaları alıcaz ve searchCommanda dönücez bunu
+ */
+void listFilesRecursively(char *pattern ,char *basePath){
+    char path[1000];
+    struct dirent *de;
+    DIR *dir = opendir(basePath);
+
+    // Unable to open directory stream
+    if (!dir)
+        return;
+
+    while ((de = readdir(dir)) != NULL)
+    {
+        if (strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0)
+        {
+
+            if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") )
+	    	{	
+	    		findPattern(pattern,de->d_name);
+	    	}
+
+            // Construct new path from our base path
+            strcpy(path, basePath);
+            strcat(path, "/");
+            strcat(path, de->d_name);
+
+            listFilesRecursively(pattern,path);
+        }
+    }
+
+    closedir(dir);
+
+}
+
+
+void searchCommand(char *args[]){
+
+	int i=0; 
+	while(args[i] != NULL){
+		i++;
+	}
+	
+	if(i==2){
+
+		// without -r option 
+		// it will look all the files which ends .c .C .h .H under current directory and find the 'command' input word in this files
+
+
+	    struct dirent *de;  // Pointer for directory entry 
+	  
+	    // opendir() returns a pointer of DIR type.  
+	    DIR *dr = opendir("."); 
+	  
+	    if (dr == NULL){  // opendir returns NULL if couldn't open directory 
+
+	        perror("Could not open current directory" ); 
+
+	    } 
+	  
+	    /*
+		*	Look all files under current directory and add find the files which endsWith .c .C .h .H , after finding call each of them and  
+		*   look if the files includes the 'pattern' which comes with argument of search commend
+	    */
+	    while ((de = readdir(dr)) != NULL) {
+
+	    	if(strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0){
+
+		    	if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") ){	
+
+		    		findPattern(args[1],de->d_name);
+
+		    	}
+
+	    	}
+
+	    }
+	            
+	  
+	    closedir(dr);     
+ 
+
+	}
+	else if(i==3 && strcmp(args[1],"-r")==0){
+
+		// recursive code 
+
+
+	    char cwd[PATH_MAX];
+		if (getcwd(cwd, sizeof(cwd)) != NULL) {
+
+		    listFilesRecursively(args[2],cwd);
+		}
+		else {
+
+		    perror("getcwd() error");
+
+		}
+
+	}
+
+	else{
+
+		printf("2 ways to use this command :\nsearch 'command'\nsearch 'option' 'command'\n");
+
+	}
+
+}
+
+ 
+int main(void){
 	
 	char inputBuffer[MAX_LINE]; /*buffer to hold command entered */
 	int background; /* equals 1 if a command is followed by '&' */
@@ -413,6 +791,7 @@ int main(void)
 	parentPid = getpid();
 	
 	ListProcessPtr startPtr = NULL; //starting pointer
+	bookmarkPtr startPtrBookmark = NULL;
 
 	while (parentPid==getpid()){
 		background = 0;
@@ -425,10 +804,20 @@ int main(void)
 		progpath = strdup(args[0]);
 		exe=args[0];
 
-		if(strcmp(args[0],"ps_all")==0){
+		if(strcmp(args[0],"exit")==0) {
+			exit(1);
+		}
+		else if(strcmp(args[0],"ps_all")==0){
 			printList(startPtr); //You need to press ps_all to see the content of list
 			deleteStoppedList(&startPtr);
-		}else if(!findpathof(path, exe)){ /*Checks the existence of program*/
+		}
+		else if(strcmp(args[0],"search")==0){
+			searchCommand(args);
+		}
+		else if(strcmp(args[0],"bookmark")==0){
+			bookmarkCommand(args,&startPtrBookmark);
+		}
+		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
 			printf("No executable \"%s\" found\n", exe);
 			free(progpath);
 		}else{			/*If there is a program, then run it*/
@@ -437,8 +826,6 @@ int main(void)
 			//partA(path, args, &background,&startPtr);
 			createProcess(path,args,&background,&startPtr);
 		}
-
-
 					
 	 }	  
         
