@@ -601,10 +601,17 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 		// EGER " İLE BASLAYIP " İLE BİTMİYORSA SEGMENTATION FAULT ALIYORUM DUZELTEMEDIM
 
 
+		if(endsWith(args[1],"\"") == 0){
+			printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
+			return;
+		}
+
 		int j=1 ;
 		while(!endsWith(args[j],"\"")){
+
 			j++;
 		}
+
 		if(j != i-1){
 			printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
 			return;
@@ -621,6 +628,10 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 			insertBookmark(startPtrBookmark,exe);
 		}
 
+	}
+	else{
+		printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
+		return;
 	}
 
 }
@@ -819,6 +830,10 @@ int checkIORedirection(char *args[]){
 
 }
 
+void runIORedirection(char *args[]){
+	
+}
+
  
 int main(void){
 	
@@ -876,7 +891,7 @@ int main(void){
 			continue;
 		}
 		else if(checkIORedirection(args) == 0){
-			printf("IOOOO\n");
+			runIORedirection(args);
 			continue;			
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
