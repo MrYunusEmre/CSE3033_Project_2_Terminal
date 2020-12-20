@@ -396,25 +396,6 @@ void deleteBookmarkList(char *charindex,bookmarkPtr *currentPtr){
 	}
 
 }
-char *trimwhitespace(char *str)
-{
-  char *end;
-
-  // Trim leading space
-  while(isspace((unsigned char)*str)) str++;
-
-  if(*str == 0)  // All spaces?
-    return str;
-
-  // Trim trailing space
-  end = str + strlen(str) - 1;
-  while(end > str && isspace((unsigned char)*end)) end--;
-
-  // Write new null terminator character
-  end[1] = '\0';
-
-  return str;
-}
 
 void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
 
@@ -797,6 +778,47 @@ void searchCommand(char *args[]){
 
 }
 
+//If input includes IO operation, then this method will return 0. Otherwise 1
+int checkIORedirection(char *args[]){
+
+	int i;
+	//Check arguments
+	for(i = 0; i < numOfArgs; i++){
+		if(strcmp(args[i], "<") == 0 && numOfArgs > 3  && strcmp(args[i+2],">") == 0){
+
+			// We need to make sure there is a file_name entered too.
+            if(i + 3 >= numOfArgs){
+                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the input to the program.\n");
+                args[0] = NULL;
+                return 1;
+            }
+            return 0;
+
+		}else if(strcmp(args[i], ">") == 0 || strcmp(args[i], ">>") == 0 || strcmp(args[i], "2>") == 0 ){
+
+			//We need to make sure there is a file_name entered too.
+            if(i + 1 >= numOfArgs){
+                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the output of the program.\n");
+                args[0] = NULL;
+                return 1;
+            }
+            return 0;
+
+		}else if(strcmp(args[i],"<") == 0){
+
+			if(i + 1 >= numOfArgs){
+                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the input to the program.\n");
+                args[0] = NULL;
+                return 1;
+            }
+            return 0;
+
+		}
+	}	
+
+
+}
+
  
 int main(void){
 	
@@ -846,10 +868,16 @@ int main(void){
 		}
 		else if(strcmp(args[0],"search")==0){
 			searchCommand(args);
+			continue;
 		}
 		else if(strcmp(args[0],"bookmark")==0){
 
 			bookmarkCommand(args,&startPtrBookmark);
+			continue;
+		}
+		else if(checkIORedirection(args) == 0){
+			printf("IOOOO\n");
+			continue;			
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
 			printf("No executable \"%s\" found\n", exe);
