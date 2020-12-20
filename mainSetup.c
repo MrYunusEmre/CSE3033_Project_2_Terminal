@@ -438,11 +438,30 @@ void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
 
 }
 
+int killAllChildProcess(pid_t ppid)
+{
+   char *buff = NULL;
+   size_t len = 255;
+   char command[256] = {0};
+
+   sprintf(command,"ps -ef|awk '$3==%u {print $2}'",ppid);
+   FILE *fp = (FILE*)popen(command,"r");
+   while(getline(&buff,&len,fp) >= 0)
+   {
+ 	 killAllChildProcess(atoi(buff));
+	 kill(atoi(buff),SIGKILL);
+   }
+   free(buff);
+   fclose(fp);
+   return 0;
+}
+
+
 void childSignalHandler(int signum) {
 	int status;
 	pid_t pid;
 	
-
+	
 	pid = waitpid(-1, &status, WNOHANG);
 }
 
@@ -455,6 +474,9 @@ void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatic
 		fflush(stdout);
 		return;
 	}
+
+
+	killAllChildProcess(fgProcessPid);
 
 	kill(fgProcessPid,SIGKILL);
 	fgProcessPid = 0;
@@ -598,7 +620,6 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 
 		// EGER BOOKMARKIN ICINE GECERLI OLMAYAN BIR ISLEM KOYMAYALIM SALLAYAMASIN ISLEMLERI DIYORSAN
 		// KONTROLU BURADA YAPALIM HA YOK DIYOSAN SAL
-		// EGER " İLE BASLAYIP " İLE BİTMİYORSA SEGMENTATION FAULT ALIYORUM DUZELTEMEDIM
 
 
 		if(endsWith(args[1],"\"") == 0){
