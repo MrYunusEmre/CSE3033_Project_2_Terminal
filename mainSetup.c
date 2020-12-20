@@ -6,12 +6,13 @@
 #include <string.h>
 
 #include <dirent.h> 
-
+#include <stdbool.h>
 
 #include <limits.h>
 #include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <ctype.h>
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
  
@@ -195,7 +196,7 @@ struct listProcess{
 
 struct bookmark{
 
-	char progName[50] ; // program name whih added into bookmark
+	char progName[50] ; // program name which added into bookmark
 	struct bookmark *nextPtr ;
 
 };
@@ -395,6 +396,25 @@ void deleteBookmarkList(char *charindex,bookmarkPtr *currentPtr){
 	}
 
 }
+char *trimwhitespace(char *str)
+{
+  char *end;
+
+  // Trim leading space
+  while(isspace((unsigned char)*str)) str++;
+
+  if(*str == 0)  // All spaces?
+    return str;
+
+  // Trim trailing space
+  end = str + strlen(str) - 1;
+  while(end > str && isspace((unsigned char)*end)) end--;
+
+  // Write new null terminator character
+  end[1] = '\0';
+
+  return str;
+}
 
 void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
 
@@ -417,18 +437,19 @@ void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
 		}
 		else{
 
-			// KANK BURADA EXECV İLE EXE CALISACAK DA EXE MESELESINI HALLEDEMEDİM SUANKİ EXE DEDİGİM SEY "" TIRNAKLARI CIKARIYOR INPUTTAN
-			// SANA MESELA -> "ls -la" girilmişse -> ls -la
-			// veriyor takil gerisnde
-
 			char exe[MAX_LINE] ;
-			char *progpath ;
-			memcpy( exe, &tempPtr->progName[2],strlen(tempPtr->progName)-4);
-
-			printf("%s\n",exe);
-
+			strcpy(exe,tempPtr->progName);
+			int length = strlen(exe);
+			int i = 0;
+			exe[length - 2] = '\0';
 			
+			for(i = 0 ; i < length; i++){
+				exe[i] = exe[i+2];
+			}
 
+			char command[100];
+			sprintf(command, "%s",exe);
+			system(command);
 
 		}
 
@@ -458,45 +479,6 @@ void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatic
 	fgProcessPid = 0;
 }
 
-
-//We can cancel that method 
-/*
-
-void partA(char path[], char *args[],int *background,ListProcessPtr *sPtr){
-	
-	pid_t childPid ;
-	
-	childPid = fork();
-	setpgid(childPid, childPid); // this will put the child in different process group
-								// this will allow us to kill specific child
-	
-	if(childPid < 0) printf("Error");
-	else if(childPid == 0){//create foreground process
-		fgProcessPid = getpid();
-		printf("pid : %ld\n",(long)fgProcessPid);		
-		execv(path,args);
-				
-			
-	}		
-	else{ //Parent part
-				
-		if(*background==0) // -> foreground
-			wait(NULL);
-			
-		else{
-			
-			
-
-			insert(&(*sPtr),childPid,args[0]);
-			
-			processNumber++;
-			
-			}		
-			
-	}
-	
-}
-*/
 
 
 void parentPart(char *args[], int *background , pid_t childPid , ListProcessPtr *sPtr){
@@ -572,6 +554,23 @@ int endsWith(const char *pre, const char *suffix){
 
 }
 
+void printBookmarkUsage(){
+	printf("*Bookmark Usage : \n->\"bookmark -l\" to see the bookmark list.\n->\"bookmark -i (index)\" to run the bookmark index.\n->\"bookmark -d (index)\" to delete the item from bookmark.\n");
+}
+
+int isInteger(char arg[]){
+	int length , i;
+	length = strlen (arg);
+    for (i=0;i<length; i++)
+        if (!isdigit(arg[i]))
+        {
+            printf("Please check your arguments !\n");
+            printBookmarkUsage();
+            return 1;
+        }
+	return 0;
+}
+
 void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 
 	int i=0; 
@@ -580,8 +579,13 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 	}
 
 	if(i==1){
-		printf("duzelt -> void bookmarkCommand() kullanım seklini yaz hata olarak ");
+		printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
+		return;
 	}
+	else if((strcmp(args[1],"-h")==0) && i==2){ 
+		printBookmarkUsage();
+		return;
+	}		
 	else if((strcmp(args[1],"-l")==0) && i==2){
 
 		printListBookmark(*startPtrBookmark);
@@ -589,22 +593,27 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 	}
 	else if((strcmp(args[1],"-i")==0) && i==3){
 
-		// args[2] listeden calistirilacak index olacak bu kadar
-		// delete gibi bu da int kontrolu yapılacak args[2] icin kendi calıstırma fonksioynunda yap sonra sil bu yourmları
-		runBookmarkIndex(args[2],*startPtrBookmark);
+		if(isInteger(args[2]) == 0){
+			runBookmarkIndex(args[2],*startPtrBookmark);
+			return;
+		}else{
+			return;
+		}	
 
 	}
 	else if((strcmp(args[1],"-d")==0) && i==3){
 
-		// args[2] listeden silinecek index olacak bu kadar , args[2] integer bi deger olacak kontrol etcez 
-		// delete icinde kontrol edebilirz 
-		deleteBookmarkList(args[2],startPtrBookmark);
+		if(isInteger(args[2]) == 0){
+			deleteBookmarkList(args[2],startPtrBookmark);
+			return;
+		}	
+		else{
+			return;
+		}
 
 	}
 	else if(startsWith("\"",args[1])){
 
-		// bookmark "ls -la" blabla
-		// eger " " tırnaklardan sonra bir sey girilmis mi diye kontrol ediyor eger girilmisse hatali input diyoruz degisle insert edioruz
 
 		// EGER BOOKMARKIN ICINE GECERLI OLMAYAN BIR ISLEM KOYMAYALIM SALLAYAMASIN ISLEMLERI DIYORSAN
 		// KONTROLU BURADA YAPALIM HA YOK DIYOSAN SAL
@@ -615,8 +624,11 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 		while(!endsWith(args[j],"\"")){
 			j++;
 		}
-		if(j != i-1)
-			printf("duzelt -> void bookmarkCommand() kullanım seklini yaz hata olarak ");
+		if(j != i-1){
+			printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
+			return;
+		}
+			
 		else{
 			char exe[MAX_LINE] ;
 			int k=1 ;
@@ -633,7 +645,8 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 }
 
 
-
+///ŞİMDİLİK GEREKSİZ 
+/*
 
 // searchdan 2 parametre ile çocuk oluşturup childPartı çağırmam lazımdı o yüzden böyle yaptım kanka 
 void createProcess2(char path[], char *args[]){
@@ -645,6 +658,8 @@ void createProcess2(char path[], char *args[]){
 
 	if(childPid == -1){perror("fork() function is failed!\n"); return;}
 	else if(childPid != 0){ // Parent Part
+		
+
 		wait(NULL);
 	}else{	//Child Part
 		childPart(path , args);
@@ -652,15 +667,16 @@ void createProcess2(char path[], char *args[]){
 	}
 
 }
-
-
+*/
+///ŞİMDİLİK GEREKSİZ 
+/*
 void findPattern(char *pattern , char *fileName){
 
 	char *argv[] = { "/usr/bin/grep", "-n", pattern , fileName , NULL };
-    createProcess2(argv[0],argv);
+	createProcess2(argv[0],argv);
 
 }
-
+*/
 
 /**
  * Lists all files and sub-directories recursively 
@@ -684,7 +700,9 @@ void listFilesRecursively(char *pattern ,char *basePath){
 
             if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") )
 	    	{	
-	    		findPattern(pattern,de->d_name);
+				char command[100];
+				sprintf(command, "grep -rnwl %s -e %s | awk '{print \"\\n-->fileName : \" $0}';grep -rnw %s -e %s | awk '{print \"-->Line Number : \" $1 \"\\n-->Line : \" $0}'", de->d_name , pattern,de->d_name , pattern);
+				system(command);
 	    	}
 
             // Construct new path from our base path
@@ -703,12 +721,15 @@ void listFilesRecursively(char *pattern ,char *basePath){
 
 void searchCommand(char *args[]){
 
+
 	int i=0; 
 	while(args[i] != NULL){
 		i++;
 	}
 	
 	if(i==2){
+
+		char cmd[1000];		
 
 		// without -r option 
 		// it will look all the files which ends .c .C .h .H under current directory and find the 'command' input word in this files
@@ -735,7 +756,9 @@ void searchCommand(char *args[]){
 
 		    	if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") ){	
 
-		    		findPattern(args[1],de->d_name);
+		    		char command[100];
+    				sprintf(command, "grep -rnwl %s -e %s | awk '{print \"\\n-->fileName : \" $0}';grep -rnw %s -e %s | awk '{print \"-->Line Number : \" $1 \"\\n-->Line : \" $0}'", de->d_name , args[1],de->d_name , args[1]);
+    				system(command);
 
 		    	}
 
@@ -801,20 +824,31 @@ int main(void){
 
 		/*setup() calls exit() when Control-D is entered */
 		setup(inputBuffer, args, &background);
+
+		if(args[0] == NULL) continue; // If user just press "enter" , then continue without doing anything
+
 		progpath = strdup(args[0]);
 		exe=args[0];
 
 		if(strcmp(args[0],"exit")==0) {
-			exit(1);
+			deleteStoppedList(&startPtr);
+			if(isEmpty(startPtr) != 0){
+				exit(1);
+			}else{
+				printf("There are processes running in the background!\n");				
+			}
+			
 		}
 		else if(strcmp(args[0],"ps_all")==0){
 			printList(startPtr); //You need to press ps_all to see the content of list
 			deleteStoppedList(&startPtr);
+			
 		}
 		else if(strcmp(args[0],"search")==0){
 			searchCommand(args);
 		}
 		else if(strcmp(args[0],"bookmark")==0){
+
 			bookmarkCommand(args,&startPtrBookmark);
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
@@ -823,9 +857,9 @@ int main(void){
 		}else{			/*If there is a program, then run it*/
 			if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
 				args[numOfArgs-1] = '\0';
-			//partA(path, args, &background,&startPtr);
 			createProcess(path,args,&background,&startPtr);
 		}
+		
 					
 	 }	  
         
