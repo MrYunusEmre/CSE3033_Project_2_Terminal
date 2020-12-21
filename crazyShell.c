@@ -577,6 +577,8 @@ void child_part(char *args[]){
         else
             fd_output = open(output_file_name, APPEND_FLAGS, CREATE_MODES);
 
+        printf("fd_output : %d\n",output_mode);
+
         if(fd_output == -1){
             perror("Failed to create or append to the file given as input...");
             return;

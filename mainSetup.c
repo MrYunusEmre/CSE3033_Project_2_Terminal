@@ -7,7 +7,7 @@
 
 #include <dirent.h> 
 #include <stdbool.h>
-
+#include <fcntl.h>
 #include <limits.h>
 #include <libgen.h>
 #include <sys/types.h>
@@ -15,7 +15,25 @@
 #include <ctype.h>
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
- 
+
+#define READ_FLAGS (O_RDONLY)
+#define CREATE_FLAGS (O_WRONLY | O_CREAT | O_TRUNC)
+#define APPEND_FLAGS (O_WRONLY | O_CREAT | O_APPEND)
+#define READ_MODES (S_IRUSR | S_IRGRP | S_IROTH)
+#define CREATE_MODES (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)
+
+
+char inputFileName[20]; 
+char outputFileName[20];
+char outputRedirectSymbol[3] = {"00"};
+
+int inputRedirectFlag;
+int outputRedirectFlag;
+
+int numOfArgs = 0; //
+int processNumber = 1 ; //
+
+pid_t parentPid ; // stores the parent pid
 
 
 
@@ -38,10 +56,6 @@ in the next command line; separate it into distinct arguments (using blanks as
 delimiters), and set the args array entries to point to the beginning of what
 will become null-terminated, C-style strings. */
 
-int numOfArgs = 0; //
-int processNumber = 1 ; //
-
-pid_t parentPid ; // stores the parent pid
 
 void setup(char inputBuffer[], char *args[],int *background)
 {
@@ -118,6 +132,19 @@ void setup(char inputBuffer[], char *args[],int *background)
  * Return non-zero if the name is an executable file, and
  * zero if it is not executable, or if it does not exist.
  */
+
+
+int formatOutputSymbol(char *arg){
+	if(strcmp(arg, ">") == 0)
+		return 0;
+	else if(strcmp(arg, ">>") == 0)
+		return 1;
+	else if(strcmp(arg, "2>") == 0)
+		return 2;
+
+	return -1;
+
+}
 
 int checkifexecutable(const char *filename)
 {
@@ -505,7 +532,105 @@ void parentPart(char *args[], int *background , pid_t childPid , ListProcessPtr 
 
 }
 
+void inputRedirect(){
+
+	int fdInput;
+
+	if(inputRedirectFlag == 1){///This is for getting input from file
+		fdInput = open(inputFileName, READ_FLAGS, READ_MODES);
+
+		if(fdInput == -1){
+	        perror("Failed to open the file given as input...");
+	        return;
+	    }
+
+	    if(dup2(fdInput, STDIN_FILENO) == -1){
+	        perror("Failed to redirect standard input...");
+	        return;
+	    }
+
+	    if(close(fdInput) == -1){
+	        perror("Failed to close the input file...");
+	        return;
+	    }
+
+	}
+
+}
+void outputRedirect(){
+
+	int fdOutput;
+
+			// > is 0 | >> is 1 | 2> is 2
+		int outputMode = formatOutputSymbol(outputRedirectSymbol);
+
+		if(outputMode == 0){ // For > part
+
+			fdOutput = open(outputFileName, CREATE_FLAGS, CREATE_MODES);
+
+	        if(fdOutput == -1){ 
+        		printf("PART 1\n");
+         	   perror("Failed to create or append to the file given as input...");
+         	   return;
+        	}
+
+
+        	if(dup2(fdOutput, STDOUT_FILENO) == -1){
+				perror("Failed to redirect standard output...");
+				return;
+			}
+
+		}
+		else if(outputMode == 1){ // for >> part
+
+			fdOutput = open(outputFileName, APPEND_FLAGS, CREATE_MODES);
+
+	        if(fdOutput == -1){ ///
+        		printf("PART 1\n");
+         	   perror("Failed to create or append to the file given as input...");
+         	   return;
+        	}
+
+
+        	if(dup2(fdOutput, STDOUT_FILENO) == -1){
+				perror("Failed to redirect standard output...");
+				return;
+			}
+
+		}
+		else{	// for 2> part
+			fdOutput = open(outputFileName, CREATE_FLAGS, CREATE_MODES);
+
+			if(fdOutput == -1){
+				printf("PART 1\n");
+				perror("Failed to create or append to the file given as input...");
+				return;
+     	   }
+
+     	   if(dup2(fdOutput, STDERR_FILENO) == -1){
+				perror("Failed to redirect standard error...");
+				return;
+			}
+
+		}
+
+}
+
 void childPart(char path[], char *args[]){
+
+	int fdInput;
+	int fdOutput;
+
+	if(inputRedirectFlag == 1){ //This is for myshell: myprog [args] < file.in
+		inputRedirect();
+
+		if(outputRedirectFlag == 1){ // This is for myprog [args] < file.in > file.out
+			outputRedirect();
+		}
+
+	}else if(outputRedirectFlag == 1){ // This is for myprog [args] > file.out and myshell: myprog [args] >> file.out and myshell: myprog [args] 2> file.out
+		outputRedirect();
+	}
 
 	execv(path,args);
 
@@ -810,49 +935,116 @@ void searchCommand(char *args[]){
 
 }
 
+void printUsageOfIO(){
+	printf("[1] -> \"myprog [args] > file.out\"\n");
+	printf("[2] -> \"myprog [args] >> file.out\"\n");
+	printf("[3] -> \"myprog [args] < file.in\"\n");
+	printf("[4] -> \"myprog [args] 2> file.out\"\n");
+	printf("[5] -> \"myprog [args] < file.in > file.out\"\n");
+}
+
 //If input includes IO operation, then this method will return 0. Otherwise 1
+//Contents of inputFileName and outputFileName also set in here 
 int checkIORedirection(char *args[]){
+
+
+	//Error handlings
+	if(numOfArgs == 2 && strcmp(args[0], "io") == 0  && strcmp(args[1], "-h") == 0){
+		printUsageOfIO();
+		return 1;
+	}
+
+	int a;
+	int io;
+	for(a = 0; a < numOfArgs; a++){
+		if(strcmp(args[a], "<") == 0 || strcmp(args[a], ">") == 0 || strcmp(args[a], ">>") == 0 || strcmp(args[a], "2>") == 0 ){
+			io = 1;
+		}
+	}
+	if(io == 1){
+	}else{
+		return 0;
+	}
 
 	int i;
 	//Check arguments
 	for(i = 0; i < numOfArgs; i++){
-		if(strcmp(args[i], "<") == 0 && numOfArgs > 3  && strcmp(args[i+2],">") == 0){
-
+		if(strcmp(args[i], "<") == 0 && numOfArgs > 3  && strcmp(args[i+2],">") == 0){ // myprog [args] < file.in > file.out
 			// We need to make sure there is a file_name entered too.
-            if(i + 3 >= numOfArgs){
-                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the input to the program.\n");
-                args[0] = NULL;
-                return 1;
-            }
-            return 0;
+		    if(i+3 >= numOfArgs){
+		        printf("Syntax error. You can type \"io -h\" to see the correct syntax.\n");
+		        args[0] = NULL;
+		        return 1;
+		    }
+
+		    inputRedirectFlag = 1;
+		    outputRedirectFlag = 1;
+		    strcpy(outputRedirectSymbol, args[i+2]);
+		    strcpy(inputFileName , args[i+1]);
+		    strcpy(outputFileName, args[i+3]);
+
+		    return 0;
 
 		}else if(strcmp(args[i], ">") == 0 || strcmp(args[i], ">>") == 0 || strcmp(args[i], "2>") == 0 ){
-
 			//We need to make sure there is a file_name entered too.
             if(i + 1 >= numOfArgs){
-                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the output of the program.\n");
+                printf("Syntax error. You can type \"io -h\" to see the correct syntax.\n");
                 args[0] = NULL;
                 return 1;
             }
+
+            outputRedirectFlag = 1;
+            strcpy(outputRedirectSymbol, args[i]);
+            strcpy(outputFileName , args[i+1]);
+
             return 0;
 
-		}else if(strcmp(args[i],"<") == 0){
-
+		}else if(strcmp(args[i],"<") == 0){ // myprog [args] < file.in
 			if(i + 1 >= numOfArgs){
-                fprintf(stderr, "Syntax error. You need to enter a file_name to direct the input to the program.\n");
+                printf("Syntax error. You can type \"io -h\" to see the correct syntax.\n");
                 args[0] = NULL;
                 return 1;
             }
+
+            inputRedirectFlag = 1;
+            strcpy(inputFileName , args[i+1]);
+
             return 0;
 
 		}
+
 	}	
 
 
 }
 
-void runIORedirection(char *args[]){
-	
+
+//This method clears the input from < > 2> >> . 
+void formatInput(char *args[]){
+
+	int i = 0;
+	int a;
+	int counter;
+	int flag = 0;
+	for(i = 0; i < numOfArgs; i++){
+		if(strcmp(args[i],"<")== 0 || strcmp(args[i],">")== 0 || strcmp(args[i],">>")== 0 || strcmp(args[i],"2>")== 0){
+			args[i] = NULL;
+			a = i;
+			counter = i+1;
+			flag = 1;
+			break;
+		}
+	}
+
+	if(flag == 0) return; //Eger komutun io ile ilgisi yoksa direkt return
+
+	for(i = counter; i < numOfArgs; i++){ 
+		args[i] = NULL;
+	}
+
+	numOfArgs = numOfArgs - (numOfArgs-a); // Update number of arguments
+
+
 }
 
  
@@ -883,10 +1075,18 @@ int main(void){
 		/*setup() calls exit() when Control-D is entered */
 		setup(inputBuffer, args, &background);
 
+
 		if(args[0] == NULL) continue; // If user just press "enter" , then continue without doing anything
 
 		progpath = strdup(args[0]);
 		exe=args[0];
+
+
+		if(checkIORedirection(args) != 0){ //// Eger ıo yazımında vs hata varsa error verip yeniden input almalı			
+			continue;
+		}
+
+		formatInput(args);
 
 		if(strcmp(args[0],"exit")==0) {
 			deleteStoppedList(&startPtr);
@@ -911,20 +1111,21 @@ int main(void){
 			bookmarkCommand(args,&startPtrBookmark);
 			continue;
 		}
-		else if(checkIORedirection(args) == 0){
-			runIORedirection(args);
-			continue;			
-		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
 			printf("No executable \"%s\" found\n", exe);
 			free(progpath);
-		}else{			/*If there is a program, then run it*/
+		}else{
+					/*If there is a program, then run it*/
 			if(*args[numOfArgs-1] == '&')// If last argument is &, delete it
-				args[numOfArgs-1] = '\0';
+				args[numOfArgs-1] = '\0';						
 			createProcess(path,args,&background,&startPtr);
 		}
 		
-					
+		 	path[0] = '\0';	
+			inputFileName[0] = '\0';
+			outputFileName[0] = '\0';
+			inputRedirectFlag = 0;
+			outputRedirectFlag = 0;
 	 }	  
         
 
