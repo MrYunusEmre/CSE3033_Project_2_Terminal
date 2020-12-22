@@ -635,7 +635,7 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 
 
 
-// searchdan 2 parametre ile çocuk oluşturup childPartı çağırmam lazımdı o yüzden böyle yaptım kanka 
+// searchdan 2 parametre ile çocuk oluşturup childPartı çağırmam lazımdı o yüzden böyle yaptım kanka 3
 void createProcess2(char path[], char *args[]){
 
 	pid_t childPid ;

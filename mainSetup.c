@@ -816,46 +816,134 @@ void findPattern(char *pattern , char *fileName){
 }
 */
 
+
+void clearLine(char args[],char lineNumber[]){
+	int i = 0;
+
+	int length = strlen(args);
+	int digitNum = 1;
+
+	for(i = 0 ; i < length; i++){
+		if(isdigit(args[i])){ //This will determine the number of digits
+			lineNumber[i] = args[i];
+			digitNum++;
+		}
+		else break;
+	}
+
+	for(i = 0; i < length; i++){
+		args[i] = args[digitNum + i];
+	}
+
+}
+
+/**
+This function takes fileName and pattern arguments. 
+Determines the file name , line number and line by using grep.
+Then combines all of them and print.
+
+*/
+void printSearchCommand(char *fileName , char *pattern){
+
+	char file[1000] = {0};
+
+	char *buff = NULL;
+	char fName[256] = {0};
+	size_t len = 255;
+
+	sprintf(fName,"grep -rnwl  %s -e %s | awk '{print $0}'",fileName, pattern);
+	FILE *fp = (FILE*)popen(fName,"r");
+
+	while(getline(&buff,&len,fp) >= 0)
+	{
+		strcpy(file,buff);
+	}
+	free(buff);
+	fclose(fp);
+	char allLine[256] = {0};
+
+	char *buff2 = NULL;
+	char command[256] = {0};
+	size_t len2 = 255;
+
+	sprintf(command,"grep -rnw  %s -e %s | awk '{print $0}'",fileName , pattern);
+
+	FILE *fp2 = (FILE*)popen(command,"r");
+	while(getline(&buff2,&len2,fp2) >= 0)
+	{
+		strcpy(allLine,buff);
+	}
+	free(buff2);
+	fclose(fp2);
+
+	char lineNumber[15] = {0};
+
+	clearLine(allLine,lineNumber);
+
+	if(strlen(file) < 1  || !isdigit(lineNumber[0])){
+
+	}else{
+		file[strlen(file)-1] = '\0';
+
+		printf("%s : %s -> %s",lineNumber,file , allLine);
+	}
+
+
+}
+
+
 /**
  * Lists all files and sub-directories recursively 
  * considering path as base path.
  * Fonksiyon current directorydeki tüm directorylere recursive olarak giriyor ve tüm dosyaları basıyor , bunu değişicez return yapıcaz
  * sonra endswithe yollayıp sadece istediğimiz dosyaları alıcaz ve searchCommanda dönücez bunu
  */
-void listFilesRecursively(char *pattern ,char *basePath){
+
+void listFilesRecursively(char *basePath,char *pattern)
+{
     char path[1000];
-    struct dirent *de;
+    struct dirent *dp;
     DIR *dir = opendir(basePath);
 
     // Unable to open directory stream
     if (!dir)
         return;
+  
 
-    while ((de = readdir(dir)) != NULL)
+    while ((dp = readdir(dir)) != NULL)
     {
-        if (strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0)
-        {
+        if (strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0)
+        {	
 
-            if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") )
-	    	{	
-				char command[100];
-				sprintf(command, "grep -rnwl %s -e %s | awk '{print \"\\n-->fileName : \" $0}';grep -rnw %s -e %s | awk '{print \"-->Line Number : \" $1 \"\\n-->Line : \" $0}'", de->d_name , pattern,de->d_name , pattern);
-				system(command);
-	    	}
+        	char fName[50];
+          
+       	   strcpy(fName,dp->d_name);
+
+
+       	   char grepFile[1000];
+       	   strcpy(grepFile , basePath);
+       	   strcat(grepFile , "/");
+       	   strcat(grepFile , dp->d_name);
+
+       	   if(fName[strlen(fName) - 2] == '.' && (fName[strlen(fName) - 1] == 'c' || fName[strlen(fName) - 1] == 'C' ||
+       	   		 fName[strlen(fName) - 1] == 'h' || fName[strlen(fName) - 1] == 'H')){
+
+
+       	   	printSearchCommand(grepFile , pattern);
+
+       	   }
 
             // Construct new path from our base path
             strcpy(path, basePath);
             strcat(path, "/");
-            strcat(path, de->d_name);
+            strcat(path, dp->d_name);
 
-            listFilesRecursively(pattern,path);
+            listFilesRecursively(path,pattern);
         }
     }
 
     closedir(dir);
-
 }
-
 
 void searchCommand(char *args[]){
 
@@ -892,19 +980,22 @@ void searchCommand(char *args[]){
 
 	    	if(strcmp(de->d_name, ".") != 0 && strcmp(de->d_name, "..") != 0){
 
-		    	if (endsWith(de->d_name,".c") || endsWith(de->d_name,".C") || endsWith(de->d_name,".h") || endsWith(de->d_name,".H") ){	
+				char fName[50];
 
-		    		char command[100];
-    				sprintf(command, "grep -rnwl %s -e %s | awk '{print \"\\n-->fileName : \" $0}';grep -rnw %s -e %s | awk '{print \"-->Line Number : \" $1 \"\\n-->Line : \" $0}'", de->d_name , args[1],de->d_name , args[1]);
-    				system(command);
+				strcpy(fName,de->d_name);
 
-		    	}
+
+	    		if(fName[strlen(fName) - 2] == '.' && (fName[strlen(fName) - 1] == 'c' || fName[strlen(fName) - 1] == 'C' ||
+       	   		 fName[strlen(fName) - 1] == 'h' || fName[strlen(fName) - 1] == 'H')){
+
+	    			printSearchCommand(de->d_name,args[1]);
+	    		}
 
 	    	}
 
 	    }
 	            
-	  
+	  	printf("\n");
 	    closedir(dr);     
  
 
@@ -917,7 +1008,7 @@ void searchCommand(char *args[]){
 	    char cwd[PATH_MAX];
 		if (getcwd(cwd, sizeof(cwd)) != NULL) {
 
-		    listFilesRecursively(args[2],cwd);
+		    listFilesRecursively(cwd,args[2]);
 		}
 		else {
 

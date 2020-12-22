@@ -5,6 +5,7 @@
 #include <sys/wait.h>
 #include <string.h>
  
+ //search için deneme
 
 #include <limits.h>
 #include <libgen.h>
