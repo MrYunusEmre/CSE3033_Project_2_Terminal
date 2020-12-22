@@ -35,22 +35,6 @@ int processNumber = 1 ; //
 
 pid_t parentPid ; // stores the parent pid
 
-
-
-/*
-	
-	SATIR 241 -> BOOKMARK INSERT 
-	SATIR 421 -> BOOKMARK CALISTIRMA YERI KESIN BAKMAN GEREKIYOR YAPAMADIM
-
-	550 den 750 ye kadar ben yazdım bi de 241 in oralarda bookmarka struct oluşturdum insert delete isempty run fonksyionlarını olusturdum 
-
-*/
-
-
-
-
-
-
 /* The setup function below will not return any value, but it will just: read
 in the next command line; separate it into distinct arguments (using blanks as
 delimiters), and set the args array entries to point to the beginning of what
@@ -447,12 +431,13 @@ void runBookmarkIndex(char *charindex, bookmarkPtr currentPtr){
 
 			char exe[MAX_LINE] ;
 			strcpy(exe,tempPtr->progName);
+			
+
 			int length = strlen(exe);
 			int i = 0;
 			exe[length - 2] = '\0';
-			
 			for(i = 0 ; i < length; i++){
-				exe[i] = exe[i+2];
+				exe[i] = exe[i+1];
 			}
 
 			char command[100];
@@ -656,7 +641,7 @@ void createProcess(char path[], char *args[],int *background,ListProcessPtr *sPt
 
 }
 
-//   ---- ayrica bookmark kontrolde de "ls -la" gibi inputlar icin " ile basladigini veya " ile bittigini kontrol etmek icin kullanıyorum
+
 int startsWith(const char *pre, const char *str)
 {
     size_t lenpre = strlen(pre),
@@ -701,6 +686,7 @@ int isInteger(char arg[]){
 
 void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 
+
 	int i=0; 
 	while(args[i] != NULL){
 		i++;
@@ -742,15 +728,58 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 	}
 	else if(startsWith("\"",args[1])){
 
+		//This is for checking the last char of command
+		int length = strlen(args[numOfArgs -1]);
+		char command[100];
+		strcpy(command,args[numOfArgs-1]);
 
-		// EGER BOOKMARKIN ICINE GECERLI OLMAYAN BIR ISLEM KOYMAYALIM SALLAYAMASIN ISLEMLERI DIYORSAN
-		// KONTROLU BURADA YAPALIM HA YOK DIYOSAN SAL
-
-
-		if(endsWith(args[1],"\"") == 0){
+		if(command[length -1] != '\"'){
 			printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
 			return;
 		}
+
+
+		char *exec;
+		char path[PATH_MAX+1];
+		char firstArgument[50];
+		int lengthOfFirstArgument = strlen(args[numOfArgs -1]);
+
+		strcpy(firstArgument,args[1]);
+		int t = 0;
+
+		if(firstArgument[0] == '\"' && firstArgument[lengthOfFirstArgument - 1] == '\"'){ //for example "ls"
+
+			firstArgument[lengthOfFirstArgument - 1] = '\0'; //to delete last quote
+
+			for(t = 0; t < lengthOfFirstArgument - 1; t++){
+				firstArgument[t] = firstArgument[t+1];
+			}
+
+		}else if(firstArgument[0] == '\"'){ // for example "ls 
+
+			for(t = 0; t < lengthOfFirstArgument - 1; t++){
+				firstArgument[t] = firstArgument[t+1];
+			}
+			firstArgument[lengthOfFirstArgument-1] = '\0';
+
+		}
+
+		exec = firstArgument;
+
+		if(!findpathof(path,exec)){ // If command which is want to be stored is not existing before, then just return
+			printf("There is not such a command to store !\n");
+			return;
+		}
+
+		char exe[MAX_LINE];
+		for(t = 1; t < numOfArgs ; t++){
+			strcat(exe,args[t]);
+			strcat(exe," ");
+		}
+
+		insertBookmark(startPtrBookmark,exe);
+		exe[0] = '\0';
+		/*
 
 		int j=1 ;
 		while(!endsWith(args[j],"\"")){
@@ -771,8 +800,11 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 				strcat(exe," ");
 				k++;
 			}
+
+			printf("ARGS : %s\nEKLENEN COMMAND : %s\n",args[1],exe);
 			insertBookmark(startPtrBookmark,exe);
 		}
+		*/
 
 	}
 	else{
@@ -781,40 +813,6 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 	}
 
 }
-
-
-///ŞİMDİLİK GEREKSİZ 
-/*
-
-// searchdan 2 parametre ile çocuk oluşturup childPartı çağırmam lazımdı o yüzden böyle yaptım kanka 
-void createProcess2(char path[], char *args[]){
-
-	pid_t childPid ;
-
-	childPid = fork();
-
-
-	if(childPid == -1){perror("fork() function is failed!\n"); return;}
-	else if(childPid != 0){ // Parent Part
-		
-
-		wait(NULL);
-	}else{	//Child Part
-		childPart(path , args);
-
-	}
-
-}
-*/
-///ŞİMDİLİK GEREKSİZ 
-/*
-void findPattern(char *pattern , char *fileName){
-
-	char *argv[] = { "/usr/bin/grep", "-n", pattern , fileName , NULL };
-	createProcess2(argv[0],argv);
-
-}
-*/
 
 
 void clearLine(char args[],char lineNumber[]){
@@ -1198,7 +1196,6 @@ int main(void){
 			continue;
 		}
 		else if(strcmp(args[0],"bookmark")==0){
-
 			bookmarkCommand(args,&startPtrBookmark);
 			continue;
 		}
