@@ -1,4 +1,0 @@
-ls: invalid option -- 'Å'
-Try 'ls --help' for more information.
-pwd: invalid option -- 'Å'
-Try 'pwd --help' for more information.
