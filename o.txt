@@ -1,2 +1,0 @@
-ls: invalid option -- 'Å'
-Try 'ls --help' for more information.
