@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <ctype.h>
+
+#include <ncurses.h>
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
 
@@ -34,6 +36,7 @@ int numOfArgs = 0; //
 int processNumber = 1 ; //
 
 pid_t parentPid ; // stores the parent pid
+pid_t fgProcessPid = 0;
 
 /* The setup function below will not return any value, but it will just: read
 in the next command line; separate it into distinct arguments (using blanks as
@@ -227,7 +230,7 @@ typedef ListProcess *ListProcessPtr; //synonym for ListProcess*
 typedef struct bookmark bookmarks ; //synonym for struct bookmark
 typedef bookmarks *bookmarkPtr ; //synonym for struct bookmarks
 
-pid_t fgProcessPid = 0;
+
 
 //This is insert function for backgrounds processes
 void insert(ListProcessPtr *sPtr , pid_t pid , char progName[]){
@@ -497,7 +500,7 @@ void childSignalHandler(int signum) {
 
 
 void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatically
-	
+
 	if(fgProcessPid == 0 || waitpid(fgProcessPid,NULL,WNOHANG) == -1){
 		system("clear");
 		printf("myshell: ");
@@ -568,7 +571,7 @@ void outputRedirect(){
 
 	int fdOutput;
 
-			// > is 0 | >> is 1 | 2> is 2
+			// > is 0 | >> is 1 | 2> is 2 | 2>> is 3
 		int outputMode = formatOutputSymbol(outputRedirectSymbol);
 
 		if(outputMode == 0){ // For > part
@@ -636,8 +639,6 @@ void outputRedirect(){
 //This is for child
 void childPart(char path[], char *args[]){
 
-	int fdInput;
-	int fdOutput;
 
 	if(inputRedirectFlag == 1){ //This is for myshell: myprog [args] < file.in
 		inputRedirect();
@@ -814,32 +815,6 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 
 		insertBookmark(startPtrBookmark,exe);
 		exe[0] = '\0';
-		/*
-
-		int j=1 ;
-		while(!endsWith(args[j],"\"")){
-
-			j++;
-		}
-
-		if(j != i-1){
-			printf("Wrong usage of Bookmark! You can type \"bookmark -h\" to see the correct usage.\n");
-			return;
-		}
-			
-		else{
-			char exe[MAX_LINE] ;
-			int k=1 ;
-			while(k<=j){
-				strcat(exe,args[k]);
-				strcat(exe," ");
-				k++;
-			}
-
-			printf("ARGS : %s\nEKLENEN COMMAND : %s\n",args[1],exe);
-			insertBookmark(startPtrBookmark,exe);
-		}
-		*/
 
 	}
 	else{
@@ -1180,7 +1155,6 @@ int main(void){
 	char *exe;
 
 	system("clear"); //This is for clearing terminal at the beginning
-	
 
 	signal(SIGCHLD, childSignalHandler); // childSignalHandler will be invoked when the fork() method is invoked
 	signal(SIGTSTP, sigtstpHandler); //This is for handling ^Z
@@ -1228,10 +1202,18 @@ int main(void){
 		}
 		else if(strcmp(args[0],"search")==0){
 			searchCommand(args);
+			inputFileName[0] = '\0';
+			outputFileName[0] = '\0';
+			inputRedirectFlag = 0;
+			outputRedirectFlag = 0;
 			continue;
 		}
 		else if(strcmp(args[0],"bookmark")==0){
-			bookmarkCommand(args,&startPtrBookmark);		
+			bookmarkCommand(args,&startPtrBookmark);
+			inputFileName[0] = '\0';
+			outputFileName[0] = '\0';
+			inputRedirectFlag = 0;
+			outputRedirectFlag = 0;		
 			continue;
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
