@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <ctype.h>
 
-#include <ncurses.h>
+//#include <ncurses.h>
  
 #define MAX_LINE 80 /* 80 chars per line, per command, should be enough. */
 
@@ -1058,6 +1058,14 @@ int checkIORedirection(char *args[]){
 		}
 	}
 	if(io == 1){
+
+		if(strcmp(args[0],"bookmark") == 0 || strcmp(args[0],"search") == 0){
+			fprintf(stderr, "I/O redirection is not valid for \" %s \" command!!\n",args[0]);
+			return 1;
+		}
+
+
+
 	}else{
 		return 0;
 	}
@@ -1179,11 +1187,10 @@ int main(void){
 		progpath = strdup(args[0]);
 		exe=args[0];
 
-		if(!(strcmp(args[0],"bookmark") == 0 || strcmp(args[0],"search") == 0)){ // IO redirection is not valid for these commands !!!!
-			if(checkIORedirection(args) != 0){ //// Eger ıo yazımında vs hata varsa error verip yeniden input almalı			
-				continue;
-			}
+		if(checkIORedirection(args) != 0){ //// Eger ıo yazımında vs hata varsa error verip yeniden input almalı			
+			continue;
 		}
+	
 
 
 		formatInput(args);
@@ -1211,7 +1218,7 @@ int main(void){
 			continue;
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
-			fprintf(stderr, "%s", "No executable \"%s\" found\n", exe);	
+			fprintf(stderr, "No executable \"%s\" found\n", exe);	
 			free(progpath);
 		}else{
 					/*If there is a program, then run it*/
