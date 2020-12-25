@@ -502,8 +502,7 @@ void childSignalHandler(int signum) {
 void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatically
 
 	if(fgProcessPid == 0 || waitpid(fgProcessPid,NULL,WNOHANG) == -1){
-		system("clear");
-		printf("myshell: ");
+		printf("\nmyshell: ");
 		fflush(stdout);
 		return;
 	}
@@ -953,9 +952,53 @@ void listFilesRecursively(char *basePath,char *pattern)
     closedir(dir);
 }
 
+//This function is for error check of search command
+int checkSearchArguments(char *args[]){
+
+	if(numOfArgs < 2){
+		fprintf(stderr, "%s", "Please check your arguments!!\n");
+		return 1;
+
+	}else if(numOfArgs == 2){ //nonrecursive check
+
+		int length = strlen(args[1]);
+		char pattern[100];
+		strcpy(pattern,args[1]);
+
+
+		if(!(pattern[0] == '"' && pattern[length - 1] == '"')){
+			fprintf(stderr, "%s", "Please check your arguments!! You need to give your pattern between \" \" \n");
+			return 1;
+		}
+
+	}else if(numOfArgs == 3){ //recursive check
+		int length = strlen(args[2]);
+		char pattern[100];
+		strcpy(pattern,args[2]);
+
+
+		if(!(pattern[0] == '"' && pattern[length - 1] == '"')){
+			fprintf(stderr, "%s", "Please check your arguments!! You need to give your pattern between \" \" \n");
+			return 1;
+		}
+
+		if(strcmp(args[1],"-r") != 0){
+			fprintf(stderr, "%s", "Please check your arguments!!\n");
+			return 1;
+		}
+
+	}else{
+		return 0;
+	}
+
+	return 0;
+}
+
+
 //This function is for "search" command
 void searchCommand(char *args[]){
 
+	if(checkSearchArguments(args) != 0) return;
 
 	int i=0; 
 	while(args[i] != NULL){
