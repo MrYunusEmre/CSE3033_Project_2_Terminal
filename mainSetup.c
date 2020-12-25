@@ -1179,10 +1179,12 @@ int main(void){
 		progpath = strdup(args[0]);
 		exe=args[0];
 
-
-		if(checkIORedirection(args) != 0){ //// Eger ıo yazımında vs hata varsa error verip yeniden input almalı			
-			continue;
+		if(!(strcmp(args[0],"bookmark") == 0 || strcmp(args[0],"search") == 0)){ // IO redirection is not valid for these commands !!!!
+			if(checkIORedirection(args) != 0){ //// Eger ıo yazımında vs hata varsa error verip yeniden input almalı			
+				continue;
+			}
 		}
+
 
 		formatInput(args);
 
@@ -1202,18 +1204,10 @@ int main(void){
 		}
 		else if(strcmp(args[0],"search")==0){
 			searchCommand(args);
-			inputFileName[0] = '\0';
-			outputFileName[0] = '\0';
-			inputRedirectFlag = 0;
-			outputRedirectFlag = 0;
 			continue;
 		}
 		else if(strcmp(args[0],"bookmark")==0){
-			bookmarkCommand(args,&startPtrBookmark);
-			inputFileName[0] = '\0';
-			outputFileName[0] = '\0';
-			inputRedirectFlag = 0;
-			outputRedirectFlag = 0;		
+			bookmarkCommand(args,&startPtrBookmark);	
 			continue;
 		}
 		else if(!findpathof(path, exe)){ /*Checks the existence of program*/
