@@ -917,35 +917,43 @@ void printSearchCommand(char *fileName , char *pattern){
 	}
 	free(buff);
 	fclose(fp);
+
+	char tempFileName[1000];
+	strcpy(tempFileName,file);
+
 	char allLine[256] = {0};
+
+	char result[1024];
 
 	char *buff2 = NULL;
 	char command[256] = {0};
-	size_t len2 = 255;
+	size_t len2 = 256;
 
 	sprintf(command,"grep -rnw  %s -e %s | awk '{print $0}'",fileName , pattern); //This returns the whole line including our pattern
 
 	FILE *fp2 = (FILE*)popen(command,"r");
-	while(getline(&buff2,&len2,fp2) >= 0)
+	while(fgets(result , sizeof(result) , fp2))
 	{
-		strcpy(allLine,buff);
+		strcpy(allLine,result);
+
+		char lineNumber[15] = {0};
+
+		clearLine(allLine,lineNumber);
+
+		if(strlen(file) < 1  || !isdigit(lineNumber[0])){
+
+		}else{
+			file[strlen(file)-1] = '\0';
+
+		//	fprintf(stdout,"%s : %s -> %s",lineNumber,file , allLine);
+			printf("%s : %s -> %s",lineNumber,file , allLine);
+			strcpy(file,tempFileName);
+		}
 	}
 	free(buff2);
 	fclose(fp2);
 
-	char lineNumber[15] = {0};
 
-	clearLine(allLine,lineNumber);
-
-	if(strlen(file) < 1  || !isdigit(lineNumber[0])){
-
-	}else{
-		file[strlen(file)-1] = '\0';
-
-	//	fprintf(stdout,"%s : %s -> %s",lineNumber,file , allLine);
-		printf("%s : %s -> %s",lineNumber,file , allLine);
-
-	}
 
 
 }
