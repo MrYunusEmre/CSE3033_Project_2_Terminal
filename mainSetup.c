@@ -224,12 +224,20 @@ struct bookmark{
 
 };
 
+struct history
+{
+	char inputArgs[MAX_LINE];
+	struct history *previousPtr ;
+	struct history *nextPtr ;
+};
+
 //These are type definitions .
 typedef struct listProcess ListProcess ; //synonym for struct listProcess
 typedef ListProcess *ListProcessPtr; //synonym for ListProcess*
 typedef struct bookmark bookmarks ; //synonym for struct bookmark
 typedef bookmarks *bookmarkPtr ; //synonym for struct bookmarks
-
+typedef struct history History ; // synonym for struct history
+typedef History *HistoryPtr ;
 
 
 //This is insert function for backgrounds processes
@@ -299,6 +307,35 @@ void insertBookmark(bookmarkPtr *bPtr , char progName[]){
 
 }
 
+void insertHistory(HistoryPtr *head , HistoryPtr *tail, char inputArgs[]){
+
+	HistoryPtr newPtr = malloc(sizeof(History)); //create node
+
+	if(newPtr != NULL){
+
+		if(*tail == NULL && *head == NULL){
+			strcpy(newPtr->inputArgs,inputArgs);
+			newPtr->previousPtr = newPtr ;			// when there is one history , nextPtr is itself and previousPtr is itself too
+			newPtr->nextPtr = newPtr ;
+			*head = newPtr ;							// head and tail is itself too
+			*tail = newPtr ;
+		}
+		else{										// when there is two history
+			strcpy(newPtr->inputArgs,inputArgs);
+			newPtr->nextPtr=(*head) ;					// newPtr's nextPtr is last headPtr and headPtr will be newPtr .
+			newPtr->previousPtr=(*tail) ;				// newPtr's previousPtr is always tail and tail will not change
+			(*head)->previousPtr=newPtr ;				// head's previousPtr will newPtr and head will be newPtr after this   
+			(*head) = newPtr ;						//-->ex		  <--------------------next---	
+			(*tail)->nextPtr = newPtr ;				//             next---->     next---->    |
+													//		*firefox*		 *gedit*		 *ls*
+		}											//			  |	<-----prev    <-----prev
+	}else{											//			   --prev------------------->
+		fprintf(stderr, "%s", "No memory available\n");
+	}
+
+
+}
+
 //This checks if list is empty or not
 int isEmpty(ListProcessPtr sPtr){return sPtr == NULL;}
 
@@ -346,6 +383,19 @@ void printListBookmark(bookmarkPtr bPtr){
 		}
 		printf("%d %s\n",i,tempPtr->progName);
 	}
+
+}
+
+void printHistory(HistoryPtr hPtr){
+
+	int i=0 ;
+
+	HistoryPtr temp = hPtr ;
+		while(temp->nextPtr != NULL && i!=3){
+			printf("%d -> %s , next-> %s , prev-> %s\n",i,temp->inputArgs,temp->nextPtr->inputArgs,temp->previousPtr->inputArgs);
+			temp = temp->nextPtr ;
+			i++;
+		}	
 
 }
 
@@ -1212,8 +1262,10 @@ int main(void){
 
 	parentPid = getpid();
 	
-	ListProcessPtr startPtr = NULL; //starting pointer
+	ListProcessPtr startPtr = NULL; //starting pointers
 	bookmarkPtr startPtrBookmark = NULL;
+		HistoryPtr headHistory = NULL ;
+	HistoryPtr tailHistory = NULL ;
 
 	while (parentPid==getpid()){
 		background = 0;
@@ -1227,6 +1279,8 @@ int main(void){
 
 		if(args[0] == NULL) continue; // If user just press "enter" , then continue without doing anything
 
+		insertHistory(&headHistory,&tailHistory,*args);	
+		//printHistory(headHistory);
 		progpath = strdup(args[0]);
 		exe=args[0];
 
