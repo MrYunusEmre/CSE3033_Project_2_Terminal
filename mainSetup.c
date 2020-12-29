@@ -856,12 +856,11 @@ void bookmarkCommand(char *args[], bookmarkPtr *startPtrBookmark){
 			return;
 		}
 
-		char exe[MAX_LINE];
+		char exe[MAX_LINE] = {""};
 		for(t = 1; t < numOfArgs ; t++){
 			strcat(exe,args[t]);
 			strcat(exe," ");
 		}
-
 		insertBookmark(startPtrBookmark,exe);
 		exe[0] = '\0';
 
@@ -950,9 +949,9 @@ void printSearchCommand(char *fileName , char *pattern){
 			strcpy(file,tempFileName);
 		}
 	}
+
 	free(buff2);
 	fclose(fp2);
-
 
 
 
@@ -1287,7 +1286,7 @@ int main(void){
 
 		if(args[0] == NULL) continue; // If user just press "enter" , then continue without doing anything
 
-		insertHistory(&headHistory,&tailHistory,*args);	
+		//insertHistory(&headHistory,&tailHistory,*args);	
 		//printHistory(headHistory);
 		progpath = strdup(args[0]);
 		exe=args[0];
