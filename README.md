@@ -28,7 +28,12 @@ In the Unix platform to compile and run that program write that statements :
 
 ![](/gifs/vol3.gif)  
 
-### **_ps\_all_** command  
+### **_ps\_all_** command :  
+**_ps\_all_** - display the status of each background job (process).  
+ It should be noted that the status information of
+background jobs are displayed in two lists: list of background jobs still running, and the list
+of background jobs that have finished execution since the last time the status is displayed
+with the _ps\_all_ command.  
 
 ![](/gifs/vol1.gif)
 
