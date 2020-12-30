@@ -17,7 +17,8 @@ This shell support the following commands or operations:
 
 # 3. USAGE
 ## How to build the project
-In the Unix platform to compile and run that program write that statements : 
+In the Unix platform to compile and run that program write that statements :  
+
 ->  **gcc mainSetup.c -o mainSetup.o**  
 -> **./mainSetup.o**  
 
