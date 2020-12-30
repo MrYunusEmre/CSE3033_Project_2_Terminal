@@ -15,6 +15,13 @@ This shell support the following commands or operations:
 | process management  | &, exit, ctrl+z                       |
 | io redirection      | <, >, >>, 2>, 2>>                     |  
 
+# 4. USAGE
+## How to build the project
+In CMD in Windows or Terminal in Linux, simply use the command make in the source folder 
+and obtain an exacutive file named myshell.
+
+## Some samples  
+
 ![](/gifs/vol3.gif)
 ![](/gifs/vol1.gif)
 ![](/gifs/vol2.gif)
