@@ -1,5 +1,5 @@
 # CSE3033_Project_2_Terminal
-Hi\n
+Hi                                                                                                                          
 ![](/gifs/vol2.gif)
 ![](/gifs/vol1.gif)
 ![](/gifs/vol3.gif)
