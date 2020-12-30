@@ -5,6 +5,11 @@ As a homework assigned in the **Operating Systems** course for junior majoring i
 it is an **individual group project** for **non-comercial** purposes.
 This program allows you to interact with the Linux system with a command line parser.  
 
+>##Engineers :  
+>>Yunus Emre Ertunç
+>>Muhammed Enes Aktürk
+
+
 # 2. FUNCTIONS
 This shell support the following commands or operations:   
 
