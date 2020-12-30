@@ -28,13 +28,28 @@ In the Unix platform to compile and run that program write that statements :
 
 ![](/gifs/vol3.gif)  
 
-### Background program and _ps\_all_ command  
+### **_ps\_all_** command  
 
 ![](/gifs/vol1.gif)
+
+### **search** command 
+
 ![](/gifs/vol2.gif)
+
+### **bookmark** command 
+
 ![](/gifs/vol7.gif)
+
+### **^Z** signal handling 
+
 ![](/gifs/vol4.gif)
+
+### **exit** command 
+
 ![](/gifs/vol6.gif)
+
+### **I/O Redirections**
+
 ![](/gifs/vol5.gif)
 
 
