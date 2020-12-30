@@ -24,9 +24,12 @@ In the Unix platform to compile and run that program write that statements :
 
 ## Some samples 
 
-### _execv()_ programs
+### Example  _execv()_ programs  
 
-![](/gifs/vol3.gif)
+![](/gifs/vol3.gif)  
+
+### Example  _execv()_ programs
+
 ![](/gifs/vol1.gif)
 ![](/gifs/vol2.gif)
 ![](/gifs/vol7.gif)
