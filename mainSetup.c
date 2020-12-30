@@ -532,7 +532,9 @@ int killAllChildProcess(pid_t ppid)
    while(getline(&buff,&len,fp) >= 0)
    {
  	 killAllChildProcess(atoi(buff));
-	 kill(atoi(buff),SIGKILL);
+ 	 char cmd[256] = {0};
+ 	 sprintf(cmd,"kill -TSTP %d",atoi(buff));
+ 	 system(cmd);
    }
    free(buff);
    fclose(fp);
@@ -560,7 +562,10 @@ void sigtstpHandler(){ //When we press ^Z, this method will be invoked automatic
 
 	killAllChildProcess(fgProcessPid);
 
-	kill(fgProcessPid,SIGKILL);
+	char cmd[256] = {0};
+	sprintf(cmd,"kill -TSTP %d",fgProcessPid); //This is for stopping process
+	system(cmd);
+
 	fgProcessPid = 0;
 }
 
