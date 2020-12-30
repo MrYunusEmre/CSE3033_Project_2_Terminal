@@ -67,6 +67,7 @@ process.
 ### **I/O Redirections**
 The shell supports I/O-redirection on either or both stdin and/or stdout and it can include
 arguments as well.  
+Type **io -h** to see the usage of that command.  
 
 ![](/gifs/vol5.gif)
 
