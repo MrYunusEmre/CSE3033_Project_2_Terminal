@@ -37,11 +37,19 @@ with the _ps\_all_ command.
 
 ![](/gifs/vol1.gif)
 
-### **search** command 
+### **search** command  
+**_search_** - This command is very useful when you search a keyword or phrase in source
+codes.The command takes a string that is going to be searched and searches this string in all
+the files under the current directory and prints their line numbers, filenames and the line that
+the text appears. If -r option is used, the command will recursively search all the
+subdirectories as well. The file formats searched by the command are limited to .c, .C, .h,
+and H.  
 
 ![](/gifs/vol2.gif)
 
 ### **bookmark** command 
+**_bookmark_** - bookmark frequently used commands. You can type _bookmark -h_ to learn the usage of that command.  
+
 
 ![](/gifs/vol7.gif)
 
