@@ -1,8 +1,8 @@
 # CSE3033_Project_2_Terminal
 # 1. OVERVIEW
-*MyShell*, as its name reveals, is a **light customized Linux shell** which resembles **bash shell** in **Ubuntu 17.04**.
-As a homework assigned in the **Linux programming** course for sophomore majoring in CS,
-it is an **individual project** for **non-comercial** purposes.
+*MyShell*, as its name reveals, is a **light customized Linux shell** which resembles **bash shell** in **Unix Platform**.
+As a homework assigned in the **Operating Systems** course for junior majoring in CS,
+it is an **individual group project** for **non-comercial** purposes.
 This program allows you to interact with the Linux system with a command line parser.  
 
 # 2. FUNCTIONS
@@ -10,12 +10,10 @@ This shell support the following commands or operations:
 
 | Category | Commands |  
 | :----------------: | :--------------------------------------|  
-| basic iteration     | echo, time, clr, help, quit           |  
-| file system         | cd, dir, pwd, umask                   |
-| process management  | &, bg, fg, jobs, exec, exit, ctrl+z   |
-| control structure   | continue, if, while                   |
-| variable management | set, unset, shift, test, =, +         |
-| io redirection      | <, >, >>, \|,                         |  
+| basic iteration     | ps_all, search , bookmark             |  
+| file system         | cd, dir, pwd,                         |
+| process management  | &, exit, ctrl+z                       |
+| io redirection      | <, >, >>, 2>, 2>>                     |  
 
 ![](/gifs/vol3.gif)
 ![](/gifs/vol1.gif)
