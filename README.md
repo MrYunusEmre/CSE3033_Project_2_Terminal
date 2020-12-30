@@ -53,15 +53,20 @@ and H.
 
 ![](/gifs/vol7.gif)
 
-### **^Z** signal handling 
+### **^Z** signal handling  
+**_^Z_** - Stop the currently running foreground process, as well as any descendants of that
+process.  
 
 ![](/gifs/vol4.gif)
 
 ### **exit** command 
+**_exit_** - Terminate your shell process.  
 
 ![](/gifs/vol6.gif)
 
 ### **I/O Redirections**
+The shell supports I/O-redirection on either or both stdin and/or stdout and it can include
+arguments as well.  
 
 ![](/gifs/vol5.gif)
 
