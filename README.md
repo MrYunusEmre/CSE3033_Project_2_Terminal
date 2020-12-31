@@ -16,7 +16,7 @@ This shell support the following commands or operations:
 | Category | Commands |  
 | :----------------: | :--------------------------------------|  
 | basic iteration     | ps_all, search , bookmark             |  
-| file system         | cd, dir, pwd,                         |
+| file system         | cd, dir, pwd..                        |
 | process management  | &, exit, ctrl+z                       |
 | io redirection      | <, >, >>, 2>, 2>>                     |  
 
@@ -42,7 +42,7 @@ with the _ps\_all_ command.
 
 ![](/gifs/vol1.gif)
 
-### **search** command  
+### **search** command :  
 **_search_** - This command is very useful when you search a keyword or phrase in source
 codes.The command takes a string that is going to be searched and searches this string in all
 the files under the current directory and prints their line numbers, filenames and the line that
@@ -52,24 +52,24 @@ and H.
 
 ![](/gifs/vol2.gif)
 
-### **bookmark** command 
+### **bookmark** command :  
 **_bookmark_** - bookmark frequently used commands. You can type _bookmark -h_ to learn the usage of that command.  
 
 
 ![](/gifs/vol7.gif)
 
-### **^Z** signal handling  
+### **^Z** signal handling :  
 **_^Z_** - Stop the currently running foreground process, as well as any descendants of that
 process.  
 
 ![](/gifs/vol4.gif)
 
-### **exit** command 
+### **exit** command :  
 **_exit_** - Terminate your shell process.  
 
 ![](/gifs/vol6.gif)
 
-### **I/O Redirections**
+### **I/O Redirections :**  
 The shell supports I/O-redirection on either or both stdin and/or stdout and it can include
 arguments as well.  
 Type **io -h** to see the usage of that command.  
