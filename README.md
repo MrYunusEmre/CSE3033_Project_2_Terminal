@@ -5,7 +5,7 @@ As a homework assigned in the **Operating Systems** course for junior majoring i
 it is an **individual group project** for **non-comercial** purposes.
 This program allows you to interact with the Linux system with a command line parser.  
 >Course Professor :
->>Ali Haydar Özer
+>>Ali Haydar Özer  
 >Developers :  
 >>**Yunus Emre Ertunç**  
 >>**Muhammed Enes Aktürk**  
